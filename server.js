@@ -18,16 +18,15 @@ const app = express();
 legoData.Initialize();
 legoData.getAllSets();
 app.set('views', __dirname + '/views');
+app.set('view engine', 'ejs');  // Set EJS as the view engine
 app.use(express.static(__dirname + '/public'));
 
 app.get("/", (req, res) => {
-   
-    res.sendFile(__dirname + "/views/home.html");
-
+    res.render("home");
 });
 
 app.get("/about", (req, res) => {
-    res.sendFile(__dirname + "/views/about.html");
+    res.render("about");
 });
 
 app.get("/lego/sets", (req, res) => {
@@ -36,14 +35,14 @@ app.get("/lego/sets", (req, res) => {
 
     if (query) {
         legoData.getSetsByTheme(decodedQuery)
-            .then((data) => res.json(data))
+            .then((data) => res.render("sets", { sets: data }))
             .catch((err) => {
                 res.status(404);
                 res.send(err);
             });
     } else {
         legoData.getAllSets()
-            .then((data) => res.json(data))
+            .then((data) => res.render("sets", { sets: data }))
             .catch((err) => {
                 res.status(404);
                 res.send(err);
@@ -55,7 +54,7 @@ app.get("/lego/sets/:num", (req, res) => {
     const param = req.params.num;
 
     legoData.getSetByNum(param)
-        .then((data) => res.json(data))
+        .then((data) => res.render("set", { set: data }))
         .catch((err) => {
             res.status(404);
             res.send(err);
@@ -64,7 +63,7 @@ app.get("/lego/sets/:num", (req, res) => {
 
 app.use((req, res, next) => {
     res.status(404);
-    res.sendFile(__dirname + "/views/404.html");
+    res.render("404");
 });
 
 app.listen(8888);
