@@ -6,7 +6,7 @@
 *
 * https://www.senecacollege.ca/about/policies/academic-integrity-policy.html
 *
-* Name: Matthew Tjoa Student ID: 166179226 Date: 28 May 2024
+* Name: Digbijay Jung Shahi ID: 120180237
 *
 * Published URL: https://web322-assignment-2-etoe-iy4lpwis9-mat0123s-projects.vercel.app/
 *
@@ -21,7 +21,7 @@ app.set('views', __dirname + '/views');
 app.use(express.static(__dirname + '/public'));
 
 app.get("/", (req, res) => {
-    //res.send("Assignment 2: Matthew Tjoa - 166179226");
+   
     res.sendFile(__dirname + "/views/home.html");
 
 });
