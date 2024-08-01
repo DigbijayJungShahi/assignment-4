@@ -12,58 +12,64 @@
 *
 ********************************************************************************/
 
-const legoData = require("./modules/legoSets");
-const express = require("express");
+const express = require('express');
+const path = require('path');
+const exphbs = require('express-handlebars');
+const bodyParser = require('body-parser');
 const app = express();
-legoData.Initialize();
-legoData.getAllSets();
-app.set('views', __dirname + '/views');
-app.set('view engine', 'ejs');  // Set EJS as the view engine
-app.use(express.static(__dirname + '/public'));
+const HTTP_PORT = process.env.PORT || 8080;
+const { initialize, getAllSets, getSetByNum, getSetsByTheme, addSet, updateSet, deleteSet, getAllThemes } = require('./modules/legoSets');
 
-app.get("/", (req, res) => {
-    res.render("home");
+app.engine('.hbs', exphbs.engine({ extname: '.hbs' }));
+app.set('view engine', '.hbs');
+
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/', (req, res) => {
+  res.redirect('/lego/sets');
 });
 
-app.get("/about", (req, res) => {
-    res.render("about");
+app.get('/lego/sets', (req, res) => {
+  getAllSets()
+    .then(sets => res.render('legoSets', { sets }))
+    .catch(err => res.status(404).render('404', { message: err }));
 });
 
-app.get("/lego/sets", (req, res) => {
-    const query = req.query.theme;
-    const decodedQuery = decodeURIComponent(query);
-
-    if (query) {
-        legoData.getSetsByTheme(decodedQuery)
-            .then((data) => res.render("sets", { sets: data }))
-            .catch((err) => {
-                res.status(404);
-                res.send(err);
-            });
-    } else {
-        legoData.getAllSets()
-            .then((data) => res.render("sets", { sets: data }))
-            .catch((err) => {
-                res.status(404);
-                res.send(err);
-            });
-    }
+app.get('/lego/addSet', (req, res) => {
+  getAllThemes()
+    .then(themes => res.render('addSet', { themes }))
+    .catch(err => res.status(404).render('404', { message: err }));
 });
 
-app.get("/lego/sets/:num", (req, res) => {
-    const param = req.params.num;
-
-    legoData.getSetByNum(param)
-        .then((data) => res.render("set", { set: data }))
-        .catch((err) => {
-            res.status(404);
-            res.send(err);
-        });
+app.post('/lego/addSet', (req, res) => {
+  addSet(req.body)
+    .then(() => res.redirect('/lego/sets'))
+    .catch(err => res.render('500', { message: `I'm sorry, but we have encountered the following error: ${err}` }));
 });
 
-app.use((req, res, next) => {
-    res.status(404);
-    res.render("404");
+app.get('/lego/editSet/:set_num', (req, res) => {
+  Promise.all([getSetByNum(req.params.set_num), getAllThemes()])
+    .then(results => res.render('editSet', { set: results[0], themes: results[1] }))
+    .catch(err => res.status(404).render('404', { message: err }));
 });
 
-app.listen(8888);
+app.post('/lego/editSet', (req, res) => {
+  updateSet(req.body)
+    .then(() => res.redirect('/lego/sets'))
+    .catch(err => res.render('500', { message: `I'm sorry, but we have encountered the following error: ${err}` }));
+});
+
+app.post('/lego/deleteSet/:set_num', (req, res) => {
+  deleteSet(req.params.set_num)
+    .then(() => res.redirect('/lego/sets'))
+    .catch(err => res.render('500', { message: `I'm sorry, but we have encountered the following error: ${err}` }));
+});
+
+app.use((req, res) => {
+  res.status(404).render('404', { message: "Page not found" });
+});
+
+initialize()
+  .then(() => app.listen(HTTP_PORT, () => console.log(`Server listening on port ${HTTP_PORT}`)))
+  .catch(err => console.log(`Unable to start server: ${err}`));
